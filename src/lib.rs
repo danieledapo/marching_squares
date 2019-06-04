@@ -1,3 +1,5 @@
+pub mod svg;
+
 #[derive(Debug, PartialEq)]
 pub struct Point {
     pub x: f64,
