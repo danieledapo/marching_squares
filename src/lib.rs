@@ -1,17 +1,11 @@
 pub mod svg;
 
-#[derive(Debug, PartialEq)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
 pub trait Field {
     fn dimensions(&self) -> (usize, usize);
     fn z_at(&self, x: usize, y: usize) -> f64;
 }
 
-pub type Countours = Vec<Vec<Point>>;
+pub type Countours = Vec<Vec<(f64, f64)>>;
 
 pub fn march(field: &impl Field, z: f64) -> Countours {
     let (width, height) = field.dimensions();
@@ -20,30 +14,81 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
 
     for y in 0..height.saturating_sub(1) {
         for x in 0..width.saturating_sub(1) {
-            let ul = field.z_at(x, y);
-            let ur = field.z_at(x + 1, y);
-            let bl = field.z_at(x, y + 1);
-            let br = field.z_at(x + 1, y + 1);
+            let ulz = field.z_at(x, y);
+            let urz = field.z_at(x + 1, y);
+            let blz = field.z_at(x, y + 1);
+            let brz = field.z_at(x + 1, y + 1);
+
+            let x = x as f64;
+            let y = y as f64;
+
+            // TODO: interpolate
+            let mx = x + 0.5;
+            let my = y + 0.5;
 
             let mut case = 0;
-            if ul > z {
+            if ulz > z {
                 case |= 1;
             }
-            if ur > z {
+            if urz > z {
                 case |= 2;
             }
-            if bl > z {
+            if brz > z {
                 case |= 4;
             }
-            if br > z {
+            if blz > z {
                 case |= 8;
             }
 
-            if case == 0 || case == 15 {
-                continue;
+            match case {
+                0 | 15 => {}
+                1 => {
+                    countours.push(((mx, y), (x, my)));
+                }
+                2 => {
+                    countours.push(((mx, y), (x + 1.0, my)));
+                }
+                3 => {
+                    countours.push(((x, y), (x + 1.0, y)));
+                }
+                4 => {
+                    countours.push(((x + 1.0, my), (mx, y + 1.0)));
+                }
+                5 => {
+                    // TODO: saddle
+                }
+                6 => {
+                    countours.push(((x + 1.0, y), (x + 1.0, y + 1.0)));
+                }
+                7 => {
+                    countours.push(((x, my), (mx, y + 1.0)));
+                }
+                8 => {
+                    countours.push(((mx, y + 1.0), (x, my)));
+                }
+                9 => {
+                    countours.push(((x, y + 1.0), (x, y)));
+                }
+                10 => {
+                    // TODO: saddle
+                }
+                11 => {
+                    countours.push(((x + 1.0, my), (mx, y + 1.0)));
+                }
+                12 => {
+                    countours.push(((x + 1.0, y + 1.0), (x, y + 1.0)));
+                }
+                13 => {
+                    countours.push(((mx, y), (x + 1.0, my)));
+                }
+                14 => {
+                    countours.push(((mx, y), (x, my)));
+                }
+                _ => unreachable!(),
             }
         }
     }
 
-    countours
+    // TODO: build actual countours from segments
+    countours.into_iter().map(|c| vec![c.0, c.1]).collect()
 }
