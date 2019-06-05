@@ -10,7 +10,7 @@ pub type Countours = Vec<Vec<(f64, f64)>>;
 pub fn march(field: &impl Field, z: f64) -> Countours {
     let (width, height) = field.dimensions();
 
-    let mut countours = vec![];
+    let mut segments = vec![];
 
     for y in 0..height.saturating_sub(1) {
         for x in 0..width.saturating_sub(1) {
@@ -27,68 +27,96 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
             let my = y + 0.5;
 
             let mut case = 0;
-            if ulz > z {
+            if blz > z {
                 case |= 1;
             }
-            if urz > z {
+            if brz > z {
                 case |= 2;
             }
-            if brz > z {
+            if urz > z {
                 case |= 4;
             }
-            if blz > z {
+            if ulz > z {
                 case |= 8;
             }
 
             match case {
                 0 | 15 => {}
                 1 => {
-                    countours.push(((mx, y), (x, my)));
+                    segments.push(((mx, y + 1.0), (x, my)));
                 }
                 2 => {
-                    countours.push(((mx, y), (x + 1.0, my)));
+                    segments.push(((x + 1.0, my), (mx, y + 1.0)));
                 }
                 3 => {
-                    countours.push(((x, y), (x + 1.0, y)));
+                    segments.push(((x + 1.0, my), (x, my)));
                 }
                 4 => {
-                    countours.push(((x + 1.0, my), (mx, y + 1.0)));
+                    segments.push(((mx, y), (x + 1.0, my)));
                 }
                 5 => {
-                    // TODO: saddle
+                    segments.push(((mx, y), (x, my)));
+                    segments.push(((mx, y + 1.0), (x + 1.0, my)));
                 }
                 6 => {
-                    countours.push(((x + 1.0, y), (x + 1.0, y + 1.0)));
+                    segments.push(((mx, y), (mx, y + 1.0)));
                 }
                 7 => {
-                    countours.push(((x, my), (mx, y + 1.0)));
+                    segments.push(((mx, y), (x, my)));
                 }
                 8 => {
-                    countours.push(((mx, y + 1.0), (x, my)));
+                    segments.push(((x, my), (mx, y)));
                 }
                 9 => {
-                    countours.push(((x, y + 1.0), (x, y)));
+                    segments.push(((mx, y + 1.0), (mx, y)));
                 }
                 10 => {
-                    // TODO: saddle
+                    segments.push(((x, my), (mx, y + 1.0)));
+                    segments.push(((x + 1.0, my), (mx, y)));
                 }
                 11 => {
-                    countours.push(((x + 1.0, my), (mx, y + 1.0)));
+                    segments.push(((x + 1.0, my), (mx, y)));
                 }
                 12 => {
-                    countours.push(((x + 1.0, y + 1.0), (x, y + 1.0)));
+                    segments.push(((x, my), (x + 1.0, my)));
                 }
                 13 => {
-                    countours.push(((mx, y), (x + 1.0, my)));
+                    segments.push(((mx, y + 1.0), (x + 1.0, my)));
                 }
                 14 => {
-                    countours.push(((mx, y), (x, my)));
+                    segments.push(((x, my), (mx, y + 1.0)));
                 }
                 _ => unreachable!(),
             }
         }
     }
 
-    // TODO: build actual countours from segments
-    countours.into_iter().map(|c| vec![c.0, c.1]).collect()
+    build_countours(segments)
+}
+
+fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>) -> Countours {
+    // TODO: make it more efficient
+
+    let mut countours = vec![];
+
+    while let Some(first) = segments.pop() {
+        let mut countour = vec![first.0, first.1];
+
+        loop {
+            let prev = countour[countour.len() - 1];
+            let next = segments.iter().enumerate().find(|(_, (s, _))| s == &prev);
+
+            match next {
+                None => break,
+                Some((i, seg)) => {
+                    countour.push(seg.1);
+                    segments.swap_remove(i);
+                }
+            }
+        }
+
+        countours.push(countour);
+    }
+
+    countours
 }
