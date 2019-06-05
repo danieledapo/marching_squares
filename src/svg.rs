@@ -75,7 +75,8 @@ impl Display for Document {
             f,
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1">"#
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="{} {} {} {}">"#,
+            self.viewbox.0, self.viewbox.1, self.viewbox.2, self.viewbox.3
         )?;
 
         for e in &self.children {
@@ -131,7 +132,7 @@ mod tests {
             doc.to_string(),
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 200 200">
 <rect fill="red" height="200" width="200" x="0" y="0" />
 <polyline points="10,20 50,20 50,50 10,50" />
 <polyline fill="none" points="160,20 180,60 140,30 160,20" stroke="black" />
