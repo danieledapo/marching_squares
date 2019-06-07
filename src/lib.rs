@@ -91,15 +91,25 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
         }
     }
 
-    build_countours(segments)
+    build_countours(segments, (width as f64, height as f64))
 }
 
-fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>) -> Countours {
+fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f64)) -> Countours {
     // TODO: make it more efficient
 
     let mut countours = vec![];
 
-    while let Some(first) = segments.pop() {
+    while !segments.is_empty() {
+        // prefer to start on a boundary, but if no point lie on a bounday just
+        // pick a random one. This allows to connect open paths entirely without
+        // breaking them in multiple chunks.
+        let first_i = segments
+            .iter()
+            .enumerate()
+            .find(|(_, (s, _))| s.0 == 0.0 || s.0 == w - 1.0 || s.1 == 0.0 || s.1 == h - 1.0)
+            .map_or_else(|| segments.len() - 1, |(i, _)| i);
+
+        let first = segments.swap_remove(first_i);
         let mut countour = vec![first.0, first.1];
 
         loop {
