@@ -1,12 +1,31 @@
 pub mod svg;
 
+/// A scalar field.
 pub trait Field {
+    /// Get the width and height of the scalar field.
     fn dimensions(&self) -> (usize, usize);
+
+    /// Calculate the z value at the given position. The position is always inside the range of
+    /// `dimensions`.
     fn z_at(&self, x: usize, y: usize) -> f64;
+
+    /// Helper to force a Field to have all the Z values at the boundaries of the field to be set
+    /// to `border_z`. Useful to ensure each path is closed.
+    fn framed(self, border_z: f64) -> Framed<Self>
+    where
+        Self: Sized,
+    {
+        Framed {
+            field: self,
+            border_z,
+        }
+    }
 }
 
+/// Countours of a
 pub type Countours = Vec<Vec<(f64, f64)>>;
 
+/// Find the countours of a given scalar field using `z` as the threshold value.
 pub fn march(field: &impl Field, z: f64) -> Countours {
     let (width, height) = field.dimensions();
 
@@ -129,4 +148,26 @@ fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f6
     }
 
     countours
+}
+
+#[derive(Debug, Clone)]
+pub struct Framed<F> {
+    field: F,
+    border_z: f64,
+}
+
+impl<T: Field> Field for Framed<T> {
+    fn dimensions(&self) -> (usize, usize) {
+        self.field.dimensions()
+    }
+
+    fn z_at(&self, x: usize, y: usize) -> f64 {
+        let (w, h) = self.dimensions();
+
+        if x == 0 || x == w.saturating_sub(1) || y == 0 || y == h.saturating_sub(1) {
+            self.border_z + 1e9
+        } else {
+            self.field.z_at(x, y)
+        }
+    }
 }
