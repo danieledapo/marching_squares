@@ -5,8 +5,11 @@ use marching_squares::simplify::simplify;
 use marching_squares::svg;
 use marching_squares::{march, Field};
 
-#[derive(Debug, Clone, Copy)]
-struct Fun;
+#[derive(Debug, Clone)]
+struct Fun {
+    field: Vec<f64>,
+    zrange: (f64, f64),
+}
 
 impl Field for Fun {
     fn dimensions(&self) -> (usize, usize) {
@@ -14,6 +17,34 @@ impl Field for Fun {
     }
 
     fn z_at(&self, x: usize, y: usize) -> f64 {
+        let (_w, h) = self.dimensions();
+        self.field[y * h + x]
+    }
+}
+
+impl Fun {
+    fn new() -> Self {
+        let mut fun = Fun {
+            field: Vec::new(),
+            zrange: (std::f64::INFINITY, std::f64::NEG_INFINITY),
+        };
+
+        let (w, h) = fun.dimensions();
+        fun.field.reserve_exact(w * h);
+
+        for y in 0..h {
+            for x in 0..w {
+                let z = fun.formula(x, y);
+
+                fun.zrange = (fun.zrange.0.min(z), fun.zrange.1.max(z));
+                fun.field.push(z);
+            }
+        }
+
+        fun
+    }
+
+    fn formula(&self, x: usize, y: usize) -> f64 {
         let scale = 150.0;
 
         let (w, h) = self.dimensions();
@@ -24,29 +55,9 @@ impl Field for Fun {
     }
 }
 
-impl Fun {
-    fn zrange(&self) -> (f64, f64) {
-        let mut zmin = std::f64::INFINITY;
-        let mut zmax = std::f64::NEG_INFINITY;
-
-        let (w, h) = self.dimensions();
-
-        for x in 0..w {
-            for y in 0..h {
-                let z = self.z_at(x, y);
-
-                zmin = zmin.min(z);
-                zmax = zmax.max(z);
-            }
-        }
-
-        (zmin, zmax)
-    }
-}
-
 fn main() {
-    let fun = Fun {};
-    let (zmin, zmax) = fun.zrange();
+    let fun = Fun::new();
+    let (zmin, zmax) = fun.zrange;
 
     let c1 = (0xD3, 0x7B, 0x47);
     let c2 = (0x2E, 0x89, 0x72);
@@ -58,7 +69,8 @@ fn main() {
     for i in (0..n).into_iter().rev() {
         let t = f64::from(i) / f64::from(n - 1);
         let z = zmin + (zmax - zmin) * t;
-        let countours = march(&fun.framed(z), z);
+
+        let countours = march(&fun.clone().framed(z), z);
 
         for c in countours {
             let poly = svg::Element::polyline(simplify(&c))
