@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Write;
 
+use marching_squares::simplify::simplify;
 use marching_squares::svg;
 use marching_squares::{march, Field};
 
@@ -60,7 +61,7 @@ fn main() {
         let countours = march(&fun.framed(z), z);
 
         for c in countours {
-            let poly = svg::Element::polyline(c)
+            let poly = svg::Element::polyline(simplify(&c))
                 .set("stroke", "black")
                 .set("stroke-width", "3");
 
