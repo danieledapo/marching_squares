@@ -1,3 +1,4 @@
+pub mod simplify;
 pub mod svg;
 
 /// A scalar field.

@@ -1,3 +1,4 @@
+use marching_squares::simplify::simplify;
 use marching_squares::svg;
 use marching_squares::{march, Field};
 
@@ -44,7 +45,7 @@ fn main() {
         .into_iter()
         .fold(svg::Document::new((0.0, 0.0, 200.0, 200.0)), |doc, c| {
             doc.push(
-                svg::Element::polyline(c)
+                svg::Element::polyline(simplify(&c))
                     .fill("none")
                     .set("stroke", "black")
                     .set("stroke-width", "0.05"),
