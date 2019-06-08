@@ -23,7 +23,7 @@ pub trait Field {
     }
 }
 
-/// Countours of a
+/// Countours of a shape.
 pub type Countours = Vec<Vec<(f64, f64)>>;
 
 /// Find the countours of a given scalar field using `z` as the threshold value.
@@ -32,12 +32,20 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
 
     let mut segments = vec![];
 
+    let mut current_row_zs = (0..width).map(|x| field.z_at(x, 0)).collect::<Vec<_>>();
+    let mut next_row_zs = Vec::with_capacity(width);
+
     for y in 0..height.saturating_sub(1) {
+        next_row_zs.clear();
+        next_row_zs.push(field.z_at(0, y + 1));
+
         for x in 0..width.saturating_sub(1) {
-            let ulz = field.z_at(x, y);
-            let urz = field.z_at(x + 1, y);
-            let blz = field.z_at(x, y + 1);
+            let ulz = current_row_zs[x];
+            let urz = current_row_zs[x + 1];
+            let blz = next_row_zs[x];
             let brz = field.z_at(x + 1, y + 1);
+
+            next_row_zs.push(brz);
 
             let x = x as f64;
             let y = y as f64;
@@ -109,14 +117,14 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
                 _ => unreachable!(),
             }
         }
+
+        std::mem::swap(&mut current_row_zs, &mut next_row_zs);
     }
 
     build_countours(segments, (width as f64, height as f64))
 }
 
 fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f64)) -> Countours {
-    // TODO: make it more efficient
-
     let mut countours = vec![];
 
     while !segments.is_empty() {
