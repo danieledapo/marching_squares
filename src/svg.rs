@@ -31,6 +31,25 @@ impl Document {
 }
 
 impl Element {
+    pub fn path(paths: Vec<Vec<(f64, f64)>>) -> Self {
+        let el = Element::new("path");
+
+        let mut d = String::new();
+        for path in paths {
+            if path.is_empty() {
+                continue;
+            }
+
+            d += &format!("M {},{}", path[0].0, path[0].1);
+            for pt in path.into_iter().skip(1) {
+                d += &format!(" L {},{}", pt.0, pt.1);
+            }
+            d += " Z";
+        }
+
+        el.set("d", d)
+    }
+
     pub fn polyline(v: Vec<(f64, f64)>) -> Self {
         let el = Element::new("polyline");
 
