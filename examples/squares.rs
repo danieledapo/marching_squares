@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Write;
+
 use marching_squares::simplify::simplify;
 use marching_squares::svg;
 use marching_squares::{march, Field};
@@ -39,18 +42,29 @@ impl Field for Example {
 }
 
 fn main() {
-    let countours = march(&Example {}, 0.5);
+    let contours = march(&Example {}, 0.5);
 
-    let doc = countours
-        .into_iter()
-        .fold(svg::Document::new((0.0, 0.0, 200.0, 200.0)), |doc, c| {
-            doc.push(
-                svg::Element::polyline(simplify(&c))
-                    .fill("none")
-                    .set("stroke", "black")
-                    .set("stroke-width", "0.05"),
-            )
-        });
+    let mut wireframe = svg::Document::new((0.0, 0.0, 200.0, 200.0));
+    let mut fill = wireframe.clone();
 
-    println!("{}", doc);
+    let mut paths = vec![];
+
+    for c in contours {
+        let p = simplify(&c);
+        paths.push(p.clone());
+
+        wireframe = wireframe.push(
+            svg::Element::polyline(p)
+                .fill("none")
+                .set("stroke", "black")
+                .set("stroke-width", "0.05"),
+        );
+    }
+
+    fill = fill.push(svg::Element::path(paths).set("stroke-width", "0.05"));
+
+    for (f, d) in &[("squares-wf.svg", wireframe), ("squares-fill.svg", fill)] {
+        let mut f = File::create(f).unwrap();
+        write!(f, "{}", d).unwrap();
+    }
 }
