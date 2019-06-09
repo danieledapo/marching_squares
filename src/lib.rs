@@ -47,13 +47,6 @@ pub fn march(field: &impl Field, z: f64) -> Contours {
 
             next_row_zs.push(brz);
 
-            let x = x as f64;
-            let y = y as f64;
-
-            // TODO: interpolate
-            let mx = x + 0.5;
-            let my = y + 0.5;
-
             let mut case = 0;
             if blz > z {
                 case |= 1;
@@ -67,6 +60,32 @@ pub fn march(field: &impl Field, z: f64) -> Contours {
             if ulz > z {
                 case |= 8;
             }
+
+            // if we're at the boundary of the image, consider solid squares as
+            // borders in order to close paths
+            case = match case {
+                15 => {
+                    if x == 0 {
+                        6
+                    } else if x == width - 2 {
+                        9
+                    } else if y == 0 {
+                        3
+                    } else if y == height - 2 {
+                        12
+                    } else {
+                        case
+                    }
+                }
+                _ => case,
+            };
+
+            let x = x as f64;
+            let y = y as f64;
+
+            // TODO: interpolate
+            let mx = x + 0.5;
+            let my = y + 0.5;
 
             match case {
                 0 | 15 => {}
@@ -174,7 +193,7 @@ impl<T: Field> Field for Framed<T> {
         let (w, h) = self.dimensions();
 
         if x == 0 || x == w.saturating_sub(1) || y == 0 || y == h.saturating_sub(1) {
-            self.border_z + 1e9
+            self.border_z + 1e-9
         } else {
             self.field.z_at(x, y)
         }
