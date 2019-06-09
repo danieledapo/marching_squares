@@ -72,14 +72,12 @@ fn main() {
 
         let contours = march(&fun.clone().framed(z), z);
 
-        for c in contours {
-            let poly = svg::Element::polyline(simplify(&c))
-                .set("stroke", "black")
-                .set("stroke-width", "3");
+        let path = svg::Element::path(contours.into_iter().map(|c| simplify(&c)).collect())
+            .set("stroke", "black")
+            .set("stroke-width", "2");
 
-            nofill_doc = nofill_doc.push(poly.clone().fill("none"));
-            fill_doc = fill_doc.push(poly.fill(lerp_colors(c1, c2, t)));
-        }
+        nofill_doc = nofill_doc.push(path.clone().fill("none"));
+        fill_doc = fill_doc.push(path.fill(lerp_colors(c1, c2, t)));
     }
 
     for (f, d) in &[
