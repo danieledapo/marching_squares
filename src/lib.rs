@@ -23,11 +23,11 @@ pub trait Field {
     }
 }
 
-/// Countours of a shape.
-pub type Countours = Vec<Vec<(f64, f64)>>;
+/// Contours of a shape.
+pub type Contours = Vec<Vec<(f64, f64)>>;
 
-/// Find the countours of a given scalar field using `z` as the threshold value.
-pub fn march(field: &impl Field, z: f64) -> Countours {
+/// Find the contours of a given scalar field using `z` as the threshold value.
+pub fn march(field: &impl Field, z: f64) -> Contours {
     let (width, height) = field.dimensions();
 
     let mut segments = vec![];
@@ -121,11 +121,11 @@ pub fn march(field: &impl Field, z: f64) -> Countours {
         std::mem::swap(&mut current_row_zs, &mut next_row_zs);
     }
 
-    build_countours(segments, (width as f64, height as f64))
+    build_contours(segments, (width as f64, height as f64))
 }
 
-fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f64)) -> Countours {
-    let mut countours = vec![];
+fn build_contours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f64)) -> Contours {
+    let mut contours = vec![];
 
     while !segments.is_empty() {
         // prefer to start on a boundary, but if no point lie on a bounday just
@@ -138,25 +138,25 @@ fn build_countours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f6
             .map_or_else(|| segments.len() - 1, |(i, _)| i);
 
         let first = segments.swap_remove(first_i);
-        let mut countour = vec![first.0, first.1];
+        let mut contour = vec![first.0, first.1];
 
         loop {
-            let prev = countour[countour.len() - 1];
+            let prev = contour[contour.len() - 1];
             let next = segments.iter().enumerate().find(|(_, (s, _))| s == &prev);
 
             match next {
                 None => break,
                 Some((i, seg)) => {
-                    countour.push(seg.1);
+                    contour.push(seg.1);
                     segments.swap_remove(i);
                 }
             }
         }
 
-        countours.push(countour);
+        contours.push(contour);
     }
 
-    countours
+    contours
 }
 
 #[derive(Debug, Clone)]
