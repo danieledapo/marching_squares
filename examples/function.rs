@@ -70,9 +70,9 @@ fn main() {
         let t = f64::from(i) / f64::from(n - 1);
         let z = zmin + (zmax - zmin) * t;
 
-        let countours = march(&fun.clone().framed(z), z);
+        let contours = march(&fun.clone().framed(z), z);
 
-        for c in countours {
+        for c in contours {
             let poly = svg::Element::polyline(simplify(&c))
                 .set("stroke", "black")
                 .set("stroke-width", "3");
