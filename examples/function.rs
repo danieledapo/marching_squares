@@ -72,7 +72,7 @@ fn main() {
 
         let contours = march(&fun.clone().framed(z), z);
 
-        let path = svg::Element::path(contours.into_iter().map(|c| simplify(&c)).collect())
+        let path = svg::Element::path(contours.into_iter().map(|c| simplify(&c)))
             .set("stroke", "black")
             .set("stroke-width", "2");
 
