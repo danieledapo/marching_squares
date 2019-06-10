@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub mod simplify;
 pub mod svg;
 
@@ -26,12 +28,29 @@ pub trait Field {
 /// Contours of a shape.
 pub type Contours = Vec<Vec<(f64, f64)>>;
 
+/// A `SegmentsMap` is used to speedup contour building on the average case. It's simply a map from
+/// the start position of the segment rounded with integers coordinates to the list of all the
+/// segments that start in that position. Usually, shapes have very few segments that start at the
+/// same integer position thus this simple optimization allows to find the next segment in O(1)
+/// which is great.
+///
+/// Note that a valid `SegmentsMap` must not have entries for an empty list of segments.
+type SegmentsMap = HashMap<(u64, u64), Vec<((f64, f64), (f64, f64))>>;
+
 /// Find the contours of a given scalar field using `z` as the threshold value.
 pub fn march(field: &impl Field, z: f64) -> Contours {
     let (width, height) = field.dimensions();
 
-    let mut segments = vec![];
+    let mut segments: SegmentsMap = HashMap::new();
+    let mut add_seg = |s: (f64, f64), e| {
+        segments
+            .entry((s.0 as u64, s.1 as u64))
+            .or_default()
+            .push((s, e));
+    };
 
+    // avoid calling z_at multiple times for the same cell by storing the z values for the current
+    // row and by storing the values for the next row as soon as they're calculated.
     let mut current_row_zs = (0..width).map(|x| field.z_at(x, 0)).collect::<Vec<_>>();
     let mut next_row_zs = Vec::with_capacity(width);
 
@@ -90,48 +109,48 @@ pub fn march(field: &impl Field, z: f64) -> Contours {
             match case {
                 0 | 15 => {}
                 1 => {
-                    segments.push(((mx, y + 1.0), (x, my)));
+                    add_seg((mx, y + 1.0), (x, my));
                 }
                 2 => {
-                    segments.push(((x + 1.0, my), (mx, y + 1.0)));
+                    add_seg((x + 1.0, my), (mx, y + 1.0));
                 }
                 3 => {
-                    segments.push(((x + 1.0, my), (x, my)));
+                    add_seg((x + 1.0, my), (x, my));
                 }
                 4 => {
-                    segments.push(((mx, y), (x + 1.0, my)));
+                    add_seg((mx, y), (x + 1.0, my));
                 }
                 5 => {
-                    segments.push(((mx, y), (x, my)));
-                    segments.push(((mx, y + 1.0), (x + 1.0, my)));
+                    add_seg((mx, y), (x, my));
+                    add_seg((mx, y + 1.0), (x + 1.0, my));
                 }
                 6 => {
-                    segments.push(((mx, y), (mx, y + 1.0)));
+                    add_seg((mx, y), (mx, y + 1.0));
                 }
                 7 => {
-                    segments.push(((mx, y), (x, my)));
+                    add_seg((mx, y), (x, my));
                 }
                 8 => {
-                    segments.push(((x, my), (mx, y)));
+                    add_seg((x, my), (mx, y));
                 }
                 9 => {
-                    segments.push(((mx, y + 1.0), (mx, y)));
+                    add_seg((mx, y + 1.0), (mx, y));
                 }
                 10 => {
-                    segments.push(((x, my), (mx, y + 1.0)));
-                    segments.push(((x + 1.0, my), (mx, y)));
+                    add_seg((x, my), (mx, y + 1.0));
+                    add_seg((x + 1.0, my), (mx, y));
                 }
                 11 => {
-                    segments.push(((x + 1.0, my), (mx, y)));
+                    add_seg((x + 1.0, my), (mx, y));
                 }
                 12 => {
-                    segments.push(((x, my), (x + 1.0, my)));
+                    add_seg((x, my), (x + 1.0, my));
                 }
                 13 => {
-                    segments.push(((mx, y + 1.0), (x + 1.0, my)));
+                    add_seg((mx, y + 1.0), (x + 1.0, my));
                 }
                 14 => {
-                    segments.push(((x, my), (mx, y + 1.0)));
+                    add_seg((x, my), (mx, y + 1.0));
                 }
                 _ => unreachable!(),
             }
@@ -140,34 +159,59 @@ pub fn march(field: &impl Field, z: f64) -> Contours {
         std::mem::swap(&mut current_row_zs, &mut next_row_zs);
     }
 
-    build_contours(segments, (width as f64, height as f64))
+    build_contours(segments, (width as u64, height as u64))
 }
 
-fn build_contours(mut segments: Vec<((f64, f64), (f64, f64))>, (w, h): (f64, f64)) -> Contours {
+fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
+    use std::collections::hash_map::Entry;
+
     let mut contours = vec![];
 
     while !segments.is_empty() {
         // prefer to start on a boundary, but if no point lie on a bounday just
         // pick a random one. This allows to connect open paths entirely without
         // breaking them in multiple chunks.
-        let first_i = segments
+        let first_k = segments
             .iter()
-            .enumerate()
-            .find(|(_, (s, _))| s.0 == 0.0 || s.0 == w - 1.0 || s.1 == 0.0 || s.1 == h - 1.0)
-            .map_or_else(|| segments.len() - 1, |(i, _)| i);
+            .find(|(s, _)| s.0 == 0 || s.0 == w - 1 || s.1 == 0 || s.1 == h - 1)
+            .map_or_else(|| segments.keys().next().unwrap(), |(k, _)| k)
+            .clone();
 
-        let first = segments.swap_remove(first_i);
+        let mut first_e = match segments.entry(first_k) {
+            Entry::Occupied(o) => o,
+            Entry::Vacant(_) => unreachable!(),
+        };
+
+        let first = first_e.get_mut().pop().unwrap();
+        if first_e.get().is_empty() {
+            first_e.remove_entry();
+        }
+
         let mut contour = vec![first.0, first.1];
 
         loop {
             let prev = contour[contour.len() - 1];
-            let next = segments.iter().enumerate().find(|(_, (s, _))| s == &prev);
+
+            let mut segments = match segments.entry((prev.0 as u64, prev.1 as u64)) {
+                Entry::Vacant(_) => break,
+                Entry::Occupied(o) => o,
+            };
+
+            let next = segments
+                .get()
+                .iter()
+                .enumerate()
+                .find(|(_, (s, _))| s == &prev);
 
             match next {
                 None => break,
                 Some((i, seg)) => {
                     contour.push(seg.1);
-                    segments.swap_remove(i);
+
+                    segments.get_mut().swap_remove(i);
+                    if segments.get().is_empty() {
+                        segments.remove_entry();
+                    }
                 }
             }
         }
