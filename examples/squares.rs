@@ -51,14 +51,14 @@ fn main() {
 
     for c in contours {
         let p = simplify(&c);
-        paths.push(p.clone());
 
         wireframe = wireframe.push(
-            svg::Element::polyline(p)
+            svg::Element::polyline(p.iter().cloned())
                 .fill("none")
                 .set("stroke", "black")
                 .set("stroke-width", "0.05"),
         );
+        paths.push(p);
     }
 
     fill = fill.push(svg::Element::path(paths).set("stroke-width", "0.05"));

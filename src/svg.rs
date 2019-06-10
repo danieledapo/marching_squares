@@ -31,26 +31,26 @@ impl Document {
 }
 
 impl Element {
-    pub fn path(paths: Vec<Vec<(f64, f64)>>) -> Self {
+    pub fn path(paths: impl IntoIterator<Item = Vec<(f64, f64)>>) -> Self {
         let el = Element::new("path");
 
         let mut d = String::new();
-        for path in paths {
-            if path.is_empty() {
-                continue;
+        for (i, path) in paths.into_iter().filter(|c| !c.is_empty()).enumerate() {
+            if i > 0 {
+                d += " ";
             }
 
-            d += &format!("M {},{}", path[0].0, path[0].1);
+            d += &format!("M {},{} ", path[0].0, path[0].1);
             for pt in path.into_iter().skip(1) {
-                d += &format!(" L {},{}", pt.0, pt.1);
+                d += &format!("L {},{} ", pt.0, pt.1);
             }
-            d += " Z";
+            d += "Z";
         }
 
         el.set("d", d)
     }
 
-    pub fn polyline(v: Vec<(f64, f64)>) -> Self {
+    pub fn polyline(v: impl IntoIterator<Item = (f64, f64)>) -> Self {
         let el = Element::new("polyline");
 
         el.set(
@@ -145,7 +145,12 @@ mod tests {
                 ])
                 .fill("none")
                 .set("stroke", "black"),
-            );
+            )
+            .push(Element::path(vec![
+                vec![(0.0, 10.0), (20.0, 30.0), (20.0, 50.0), (0.0, 50.0)],
+                vec![(20.0, 20.0), (40.0, 40.0), (20.0, 0.0)],
+            ]))
+            .push(Element::path(vec![vec![], vec![(0.0, 10.0)]]));
 
         assert_eq!(
             doc.to_string(),
@@ -155,6 +160,8 @@ mod tests {
 <rect fill="red" height="200" width="200" x="0" y="0" />
 <polyline points="10,20 50,20 50,50 10,50" />
 <polyline fill="none" points="160,20 180,60 140,30 160,20" stroke="black" />
+<path d="M 0,10 L 20,30 L 20,50 L 0,50 Z M 20,20 L 40,40 L 20,0 Z" />
+<path d="M 0,10 Z" />
 </svg>"#
         );
     }
