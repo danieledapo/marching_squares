@@ -102,55 +102,56 @@ pub fn march(field: &impl Field, z: f64) -> Contours {
             let x = x as f64;
             let y = y as f64;
 
-            // TODO: interpolate
-            let mx = x + 0.5;
-            let my = y + 0.5;
+            let top = (x + fraction(z, (ulz, urz)), y);
+            let bottom = (x + fraction(z, (blz, brz)), y + 1.0);
+            let left = (x, y + fraction(z, (ulz, blz)));
+            let right = (x + 1.0, y + fraction(z, (urz, brz)));
 
             match case {
                 0 | 15 => {}
                 1 => {
-                    add_seg((mx, y + 1.0), (x, my));
+                    add_seg(bottom, left);
                 }
                 2 => {
-                    add_seg((x + 1.0, my), (mx, y + 1.0));
+                    add_seg(right, bottom);
                 }
                 3 => {
-                    add_seg((x + 1.0, my), (x, my));
+                    add_seg(right, left);
                 }
                 4 => {
-                    add_seg((mx, y), (x + 1.0, my));
+                    add_seg(top, right);
                 }
                 5 => {
-                    add_seg((mx, y), (x, my));
-                    add_seg((mx, y + 1.0), (x + 1.0, my));
+                    add_seg(top, left);
+                    add_seg(bottom, right);
                 }
                 6 => {
-                    add_seg((mx, y), (mx, y + 1.0));
+                    add_seg(top, bottom);
                 }
                 7 => {
-                    add_seg((mx, y), (x, my));
+                    add_seg(top, left);
                 }
                 8 => {
-                    add_seg((x, my), (mx, y));
+                    add_seg(left, top);
                 }
                 9 => {
-                    add_seg((mx, y + 1.0), (mx, y));
+                    add_seg(bottom, top);
                 }
                 10 => {
-                    add_seg((x, my), (mx, y + 1.0));
-                    add_seg((x + 1.0, my), (mx, y));
+                    add_seg(left, bottom);
+                    add_seg(right, top);
                 }
                 11 => {
-                    add_seg((x + 1.0, my), (mx, y));
+                    add_seg(right, top);
                 }
                 12 => {
-                    add_seg((x, my), (x + 1.0, my));
+                    add_seg(left, right);
                 }
                 13 => {
-                    add_seg((mx, y + 1.0), (x + 1.0, my));
+                    add_seg(bottom, right);
                 }
                 14 => {
-                    add_seg((x, my), (mx, y + 1.0));
+                    add_seg(left, bottom);
                 }
                 _ => unreachable!(),
             }
@@ -174,8 +175,7 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
         let first_k = segments
             .iter()
             .find(|(s, _)| s.0 == 0 || s.0 == w - 1 || s.1 == 0 || s.1 == h - 1)
-            .map_or_else(|| segments.keys().next().unwrap(), |(k, _)| k)
-            .clone();
+            .map_or_else(|| *segments.keys().next().unwrap(), |(k, _)| *k);
 
         let mut first_e = match segments.entry(first_k) {
             Entry::Occupied(o) => o,
@@ -220,6 +220,15 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
     }
 
     contours
+}
+
+fn fraction(z: f64, (z0, z1): (f64, f64)) -> f64 {
+    if z0 == z1 {
+        return 0.5;
+    }
+
+    let t = (z - z0) / (z1 - z0);
+    t.max(0.0).min(1.0)
 }
 
 #[derive(Debug, Clone)]
