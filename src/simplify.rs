@@ -58,3 +58,59 @@ fn perpendicular_dist(p: (f64, f64), (s, e): ((f64, f64), (f64, f64))) -> f64 {
 
     num / den
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simplify_small_paths() {
+        assert_eq!(simplify(&[]), vec![]);
+        assert_eq!(simplify(&[(1.0, 1.0)]), vec![(1.0, 1.0)]);
+        assert_eq!(
+            simplify(&[(1.0, 1.0), (2.0, 2.0)]),
+            vec![(1.0, 1.0), (2.0, 2.0)]
+        );
+    }
+
+    #[test]
+    fn test_simplify_open_paths() {
+        assert_eq!(
+            simplify(&[(1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]),
+            vec![(1.0, 1.0), (3.0, 3.0)]
+        );
+
+        assert_eq!(
+            simplify(&[
+                (0.0, 0.0),
+                (1e-20, 0.0),
+                (1e-19, 0.0),
+                (1.0, 1.0),
+                (1.0, 1.0 + 1e-20),
+                (2.0, 2.0),
+            ]),
+            vec![(0.0, 0.0), (2.0, 2.0)]
+        );
+    }
+
+    #[test]
+    fn test_simplify_closed_paths() {
+        assert_eq!(
+            simplify(&[(1.0, 1.0), (2.0, 2.0), (3.0, 3.0), (1.0, 1.0)]),
+            vec![(1.0, 1.0), (3.0, 3.0), (1.0, 1.0)]
+        );
+
+        assert_eq!(
+            simplify(&[
+                (0.0, 0.0),
+                (1e-20, 0.0),
+                (1e-19, 0.0),
+                (1.0, 1.0),
+                (1.0, 1.0 + 1e-20),
+                (2.0, 2.0),
+                (0.0, 0.0),
+            ]),
+            vec![(0.0, 0.0), (2.0, 2.0), (0.0, 0.0)]
+        );
+    }
+}
