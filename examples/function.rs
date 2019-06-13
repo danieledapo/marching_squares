@@ -70,7 +70,7 @@ fn main() {
         let t = f64::from(i) / f64::from(n - 1);
         let z = zmin + (zmax - zmin) * t;
 
-        let contours = march(&fun.clone().framed(z), z);
+        let contours = march(&fun.framed(z), z);
 
         let path = svg::Element::path(contours.into_iter().map(|c| simplify(&c)))
             .set("stroke", "black")

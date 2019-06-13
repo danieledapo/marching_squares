@@ -14,7 +14,7 @@ pub trait Field {
 
     /// Helper to force a Field to have all the Z values at the boundaries of the field to be set
     /// to `border_z`. Useful to ensure each path is closed.
-    fn framed(self, border_z: f64) -> Framed<Self>
+    fn framed(&self, border_z: f64) -> Framed<Self>
     where
         Self: Sized,
     {
@@ -232,12 +232,12 @@ fn fraction(z: f64, (z0, z1): (f64, f64)) -> f64 {
 }
 
 #[derive(Debug, Clone)]
-pub struct Framed<F> {
-    field: F,
+pub struct Framed<'s, F> {
+    field: &'s F,
     border_z: f64,
 }
 
-impl<T: Field> Field for Framed<T> {
+impl<T: Field> Field for Framed<'_, T> {
     fn dimensions(&self) -> (usize, usize) {
         self.field.dimensions()
     }
