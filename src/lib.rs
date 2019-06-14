@@ -261,3 +261,78 @@ impl<T: Field> Field for Framed<'_, T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::simplify::simplify;
+    use super::*;
+
+    #[test]
+    fn test_msq_basic_square() {
+        struct Sq;
+        impl Field for Sq {
+            fn dimensions(&self) -> (usize, usize) {
+                (10, 10)
+            }
+
+            fn z_at(&self, x: usize, y: usize) -> f64 {
+                if (0..2).contains(&x) && y == 2 {
+                    return 1.0;
+                }
+
+                let r = 2..8;
+                if r.contains(&x) && r.contains(&y) {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
+        }
+
+        let countours = march(&Sq {}, 0.5)
+            .into_iter()
+            .map(|p| simplify(&p))
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            countours,
+            vec![vec![
+                (0.0, 2.5),
+                (1.0, 2.5),
+                (1.5, 3.0),
+                (1.5, 7.0),
+                (2.0, 7.5),
+                (7.0, 7.5),
+                (7.5, 7.0),
+                (7.5, 2.0),
+                (7.0, 1.5),
+                (0.0, 1.5)
+            ]]
+        );
+    }
+
+    #[test]
+    fn test_msq_everything_filled() {
+        struct Filled;
+        impl Field for Filled {
+            fn dimensions(&self) -> (usize, usize) {
+                (10, 10)
+            }
+
+            fn z_at(&self, _x: usize, _y: usize) -> f64 {
+                1.0
+            }
+        }
+
+        assert!(march(&Filled {}, 2.0).is_empty());
+    }
+
+    #[test]
+    fn test_fraction() {
+        assert_eq!(fraction(5.0, (5.0, 5.0)), 0.5);
+        assert_eq!(fraction(5.0, (5.0, 10.0)), 0.0);
+        assert_eq!(fraction(7.5, (5.0, 10.0)), 0.5);
+        assert_eq!(fraction(0.0, (5.0, 10.0)), 0.0);
+        assert_eq!(fraction(20.0, (5.0, 10.0)), 1.0);
+    }
+}
