@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub mod simplify;
 pub mod svg;
@@ -168,14 +168,20 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
 
     let mut contours = vec![];
 
+    let mut boundaries = segments
+        .keys()
+        .cloned()
+        .filter(|s| s.0 == 0 || s.0 == w - 1 || s.1 == 0 || s.1 == h - 1)
+        .collect::<HashSet<_>>();
+
     while !segments.is_empty() {
         // prefer to start on a boundary, but if no point lie on a bounday just
         // pick a random one. This allows to connect open paths entirely without
         // breaking them in multiple chunks.
-        let first_k = segments
+        let first_k = boundaries
             .iter()
-            .find(|(s, _)| s.0 == 0 || s.0 == w - 1 || s.1 == 0 || s.1 == h - 1)
-            .map_or_else(|| *segments.keys().next().unwrap(), |(k, _)| *k);
+            .next()
+            .map_or_else(|| *segments.keys().next().unwrap(), |k| *k);
 
         let mut first_e = match segments.entry(first_k) {
             Entry::Occupied(o) => o,
@@ -185,6 +191,7 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
         let first = first_e.get_mut().pop().unwrap();
         if first_e.get().is_empty() {
             first_e.remove_entry();
+            boundaries.remove(&first_k);
         }
 
         let mut contour = vec![first.0, first.1];
@@ -192,7 +199,8 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
         loop {
             let prev = contour[contour.len() - 1];
 
-            let mut segments = match segments.entry((prev.0 as u64, prev.1 as u64)) {
+            let segments_k = (prev.0 as u64, prev.1 as u64);
+            let mut segments = match segments.entry(segments_k) {
                 Entry::Vacant(_) => break,
                 Entry::Occupied(o) => o,
             };
@@ -211,6 +219,7 @@ fn build_contours(mut segments: SegmentsMap, (w, h): (u64, u64)) -> Contours {
                     segments.get_mut().swap_remove(i);
                     if segments.get().is_empty() {
                         segments.remove_entry();
+                        boundaries.remove(&segments_k);
                     }
                 }
             }
