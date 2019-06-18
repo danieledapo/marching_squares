@@ -328,6 +328,23 @@ mod tests {
     }
 
     #[test]
+    fn test_msq_everything_empty() {
+        struct Empty;
+        impl Field for Empty {
+            fn dimensions(&self) -> (usize, usize) {
+                (10, 10)
+            }
+
+            fn z_at(&self, _x: usize, _y: usize) -> f64 {
+                0.0
+            }
+        }
+
+        assert!(march(&Empty {}, 2.0).is_empty());
+        assert_eq!(march(&Empty {}.framed(2.0), 2.0).len(), 1);
+    }
+
+    #[test]
     fn test_fraction() {
         assert_eq!(fraction(5.0, (5.0, 5.0)), 0.5);
         assert_eq!(fraction(5.0, (5.0, 10.0)), 0.0);
