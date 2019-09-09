@@ -27,7 +27,7 @@ impl Field for HeightMap {
     }
 
     fn z_at(&self, x: usize, y: usize) -> f64 {
-        f64::from(self.img.get_pixel(x as u32, y as u32).data[0])
+        f64::from(self.img.get_pixel(x as u32, y as u32).0[0])
     }
 }
 
