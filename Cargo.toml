@@ -3,6 +3,7 @@ name = "marching-squares"
 version = "0.1.0"
 authors = ["Daniele D'Orazio <d.dorazio96@gmail.com>"]
 edition = "2018"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 
