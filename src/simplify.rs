@@ -58,7 +58,7 @@ fn rdp(r: &mut Vec<(f64, f64)>, poly: &[(f64, f64)], eps: f64) {
 
 fn perpendicular_dist(p: (f64, f64), (s, e): ((f64, f64), (f64, f64))) -> f64 {
     let num = ((e.1 - s.1) * p.0 - (e.0 - s.0) * p.1 + e.0 * s.1 - e.1 * s.0).abs();
-    let den = ((e.0 - s.0).powi(2) + (e.1 - s.0).powi(2)).sqrt();
+    let den = ((e.0 - s.0).powi(2) + (e.1 - s.1).powi(2)).sqrt();
 
     num / den
 }
