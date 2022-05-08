@@ -15,7 +15,7 @@ struct HeightMap {
 
 impl HeightMap {
     fn open(p: impl AsRef<Path>) -> image::ImageResult<Self> {
-        let img = image::open(p)?.to_luma();
+        let img = image::open(p)?.to_luma8();
         Ok(HeightMap { img })
     }
 }

@@ -9,9 +9,7 @@ use marching_squares::svg;
 use marching_squares::{march, Field};
 
 struct Skeleton {
-    pub dt: GrayImage,
     pub skeleton: GrayImage,
-    pub skeleton_pts: Vec<(u32, u32)>,
 }
 
 impl Skeleton {
@@ -32,11 +30,7 @@ impl Skeleton {
             skeleton.put_pixel(x, y, Luma([255]));
         }
 
-        Self {
-            dt,
-            skeleton,
-            skeleton_pts,
-        }
+        Self { skeleton }
     }
 
     fn distance_transform(mut img: GrayImage, threshold: u8) -> (GrayImage, u8) {
@@ -121,7 +115,7 @@ fn main() {
 
     let img = image::open(path)
         .expect("cannot load input image")
-        .to_luma();
+        .to_luma8();
     let skeleton = Skeleton::new(img, threshold);
 
     // skeleton.dt.save("dt.png").unwrap();
