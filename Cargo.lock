@@ -307,7 +307,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "marching-squares"
+name = "marching_squares"
 version = "0.1.0"
 dependencies = [
  "image",

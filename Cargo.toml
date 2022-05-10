@@ -1,5 +1,5 @@
 [package]
-name = "marching-squares"
+name = "marching_squares"
 version = "0.1.0"
 authors = ["Daniele D'Orazio <d.dorazio96@gmail.com>"]
 edition = "2021"
