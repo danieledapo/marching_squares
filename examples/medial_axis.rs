@@ -35,7 +35,7 @@ impl Skeleton {
 
     fn distance_transform(mut img: GrayImage, threshold: u8) -> (GrayImage, u8) {
         for p in img.pixels_mut() {
-            p[0] = if p.0[0] <= threshold { 0 } else { 1 };
+            p[0] = u8::from(p.0[0] > threshold);
         }
 
         let mut maxd = 0;

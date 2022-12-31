@@ -217,7 +217,7 @@ fn fraction(z: f64, (z0, z1): (f64, f64)) -> f64 {
     }
 
     let t = (z - z0) / (z1 - z0);
-    t.max(0.0).min(1.0)
+    t.clamp(0.0, 1.0)
 }
 
 #[derive(Debug, Clone)]
