@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 pub mod simplify;
+
+#[cfg(feature = "svg")]
 pub mod svg;
 
 /// A scalar field.
