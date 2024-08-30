@@ -34,7 +34,7 @@ fn rdp(r: &mut Vec<(f64, f64)>, poly: &[(f64, f64)], eps: f64) {
     let ep = *poly.last().unwrap();
 
     let mut farthest_i = 0;
-    let mut max_dist = std::f64::NEG_INFINITY;
+    let mut max_dist = f64::NEG_INFINITY;
     for (i, p) in poly.iter().enumerate().take(poly.len() - 1).skip(1) {
         let d = perpendicular_dist(*p, (sp, ep));
         if d > max_dist {
